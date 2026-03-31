@@ -157,7 +157,55 @@ class ExactEngine:
             "memory_bytes": self.total_rows * 104,
             "engine": "exact",
         }
+    def top_k(self, column: str, k: int = 5, where: Optional[str] = None) -> Dict[str, Any]:
+        if column == "*":
+            raise ValueError("Cannot perform TOP K analysis on '*'. Please select a specific column.")
+        where_clause = f"WHERE {where}" if where else ""
+        col_safe = f'"{column}"'
+        sql = f"SELECT {col_safe}, COUNT(*) as freq FROM transactions {where_clause} GROUP BY {col_safe} ORDER BY freq DESC LIMIT {k}"
 
+        start = time.perf_counter()
+        rows = self.conn.execute(sql).fetchall()
+        elapsed = time.perf_counter() - start
+
+        result = {str(row[0]): int(row[1]) for row in rows if row[0] is not None}
+
+        return {
+            "query_type": "TOP_K",
+            "sql": sql,
+            "result": result,
+            "time_ms": round(elapsed * 1000, 2),
+            "memory_bytes": self.total_rows * 104,
+            "engine": "exact",
+        }
+
+    def percentage(self, column: str, where: Optional[str] = None) -> Dict[str, Any]:
+        if column == "*":
+            raise ValueError("Cannot perform PERCENTAGE analysis on '*'. Please select a specific column.")
+        where_clause = f"WHERE {where}" if where else ""
+        col_safe = f'"{column}"'
+        sql = f"""
+            SELECT {col_safe}, 
+            COUNT(*) * 100.0 / NULLIF((SELECT COUNT(*) FROM transactions {where_clause}), 0) as pct
+            FROM transactions {where_clause}
+            GROUP BY {col_safe}
+            ORDER BY pct DESC
+        """
+
+        start = time.perf_counter()
+        rows = self.conn.execute(sql).fetchall()
+        elapsed = time.perf_counter() - start
+
+        result = {str(row[0]): round(float(row[1]), 2) for row in rows if row[0] is not None and row[1] is not None}
+
+        return {
+            "query_type": "PERCENTAGE",
+            "sql": sql,
+            "result": result,
+            "time_ms": round(elapsed * 1000, 2),
+            "memory_bytes": self.total_rows * 104,
+            "engine": "exact",
+        }
     def get_columns(self):
         """Return the column names and types of the transactions table."""
         info = self.conn.execute("DESCRIBE transactions").fetchall()

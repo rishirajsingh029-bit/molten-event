@@ -304,6 +304,10 @@ def _dispatch_query(req: QueryRequest, engine_type: str) -> dict:
                 req.agg_func or "AVG",
                 req.where,
             )
+        elif query_type == "top_k":
+            return engine.top_k(req.column, k=5, where=req.where)
+        elif query_type == "percentage":
+            return engine.percentage(req.column, where=req.where)
     else:
         engine = ApproxEngine(df_full, accuracy_target=req.accuracy_target)
         if query_type == "count":
@@ -321,5 +325,9 @@ def _dispatch_query(req: QueryRequest, engine_type: str) -> dict:
                 req.agg_func or "AVG",
                 req.where,
             )
+        elif query_type == "top_k":
+            return engine.top_k(req.column, k=5, where=req.where)
+        elif query_type == "percentage":
+            return engine.percentage(req.column, where=req.where)
 
     return {"error": f"Unknown query type: {query_type}"}
