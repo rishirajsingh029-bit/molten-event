@@ -7,31 +7,27 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Flattened for maximum compatibility with existing code and @apply
+        'dino-purple-dark': '#0d0221',
+        'dino-purple-mid': '#2d005a',
+        'dino-purple-light': '#3c006d',
+        'neon-cyan': '#00f5d4',
+        'neon-pink': '#f15bb5',
+        'neon-magenta': '#9b5de5',
         primary: {
-          50: '#eef2ff',
-          100: '#e0e7ff',
-          200: '#c7d2fe',
-          300: '#a5b4fc',
-          400: '#818cf8',
-          500: '#6366f1',
-          600: '#4f46e5',
-          700: '#4338ca',
-          800: '#3730a3',
-          900: '#312e81',
-          950: '#1e1b4b',
+          500: '#8338ec',
+          600: '#3a86ff',
         },
         surface: {
-          50: '#f8fafc',
-          100: '#f1f5f9',
-          200: '#e2e8f0',
-          700: '#1e293b',
-          800: '#0f172a',
-          900: '#020617',
+          900: '#0a001a',
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Outfit', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+        header: ['Silkscreen', 'cursive'],
+        geometric: ['Orbitron', 'sans-serif'],
+        pixel: ['Press Start 2P', 'cursive'],
       },
       animation: {
         'pulse-slow': 'pulse 3s ease-in-out infinite',

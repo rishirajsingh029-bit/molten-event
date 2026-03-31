@@ -1,54 +1,70 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import GradientShader from "./GradientShader";
 
+/**
+ * HeroLanding
+ * -----------
+ * The entry point for Dino Data. 
+ * Featuring a high-intensity WebGL gradient shader (Figma-inspired).
+ */
 export default function HeroLanding() {
   const navigate = useNavigate();
 
   return (
-    <div className="relative flex flex-col items-center justify-center min-h-[75vh] py-12 px-4 sm:px-6 lg:px-8 text-center animate-fade-in overflow-hidden">
+    <div className="relative flex flex-col items-center min-h-[92vh] py-16 px-4 sm:px-6 lg:px-8 text-center overflow-hidden bg-black">
       
-      {/* Jolly Background Glows */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-yellow-400/20 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 left-1/4 w-[600px] h-[600px] bg-orange-500/10 rounded-full blur-[150px]" />
+      {/* 🚀 WebGL Shader Background (Manual integration from Figma) */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <GradientShader 
+          speed={0.8} 
+          lineCount={14} 
+          amplitude={0.25} 
+          yOffset={0.05} 
+        />
+        {/* Vignette effect to draw focus to center */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,rgba(0,0,0,0.6)_100%)]" />
       </div>
 
-      <div className="relative z-10 max-w-4xl mx-auto space-y-8 flex flex-col items-center">
+      {/* Main Content */}
+      <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col items-center justify-center min-h-[60vh] space-y-12">
         
-        {/* Playful Dino Icon */}
-        <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-3xl bg-gradient-to-br from-yellow-300 to-orange-500 flex items-center justify-center text-5xl sm:text-7xl shadow-[0_0_50px_rgba(251,191,36,0.3)] animate-pulse-slow">
-          🦖
-        </div>
-
-        {/* Main Title */}
-        <div className="space-y-4">
-          <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tight">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-orange-400 to-amber-500">
-              Dino Data
-            </span>
+        {/* Title Group */}
+        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-5 duration-1000">
+          <h1 
+            className="text-6xl md:text-8xl font-normal tracking-[0.1em] text-white drop-shadow-[0_0_15px_rgba(168,85,247,0.4)]"
+            style={{ fontFamily: "'Cinzel', serif" }}
+          >
+            DINO DATA
           </h1>
-          <p className="text-xl sm:text-3xl font-medium text-white/90 font-inter">
-            Save your time use dino data.
-          </p>
-          <p className="max-w-xl mx-auto text-base sm:text-lg text-gray-400 mt-4 leading-relaxed">
-            Unleash the power of probabilistic structures. Get answers highly accurate analytical answers 10x faster than traditional Data Lakes.
+          <p className="max-w-2xl mx-auto text-[10px] md:text-sm tracking-[0.3em] text-purple-200/80 uppercase font-sans font-medium">
+            Next Generation Approximate Query Processing
           </p>
         </div>
 
-        {/* Interactive Speedup Button */}
-        <div className="pt-8">
+        {/* Action Button */}
+        <div className="animate-in fade-in duration-1000 delay-300">
           <button
             onClick={() => navigate("/analysis")}
-            className="group relative inline-flex items-center justify-center px-10 py-5 text-xl sm:text-2xl font-bold text-white transition-all duration-300 ease-in-out bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full hover:scale-110 hover:shadow-[0_0_60px_rgba(251,191,36,0.8)] focus:outline-none focus:ring-4 focus:ring-yellow-500/50"
+            className="group relative px-12 py-4 text-xs md:text-sm tracking-[0.4em] font-black text-white uppercase bg-white/5 hover:bg-white/10 rounded-full border border-white/20 transition-all duration-500 hover:scale-110 hover:border-primary-400 hover:shadow-[0_0_40px_rgba(168,85,247,0.3)] backdrop-blur-sm"
           >
-            <span className="mr-3 text-2xl group-hover:animate-bounce">⚡</span>
-            Speedup
-            {/* Inner glow effect */}
-            <div className="absolute inset-0 w-full h-full rounded-full ring-2 ring-white/20 group-hover:ring-white/50 transition-all opacity-0 group-hover:opacity-100" />
+            <span className="relative z-10">Let's Start</span>
+            {/* Subtle inner glow */}
+            <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-transparent via-primary-500/20 to-transparent" />
           </button>
         </div>
 
+        {/* Subtitle / Description */}
+        <div className="max-w-xl animate-in fade-in duration-1000 delay-500">
+          <p className="text-[9px] md:text-xs text-white/40 uppercase font-sans leading-relaxed tracking-widest">
+            Save your time, use Dino Data. Experience sub-millisecond analytical insights on datasets of any scale.
+          </p>
+        </div>
+
       </div>
+
+      {/* Background decoration */}
+      <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-black to-transparent z-10" />
     </div>
   );
 }

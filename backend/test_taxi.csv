@@ -1,0 +1,11 @@
+Date,Time,Booking ID,Booking Status,Customer,Vehicle Type,Pickup Loc,Drop Locat,Avg VTAT,Avg CTAT,Cancelled
+2026-03-30,12:29:38,CNR5000,Completed,CID19821,eBike,Palam Vihar,Jhilmil,null,null,null
+2026-03-30,18:01:39,CNR5001,Incomplete,CID46048,Go Sedan,Shastri Nagar,Gurgaon,4.9,14,null
+2026-03-30,08:56:10,CNR5002,Cancelled,CID92028,Auto,Khandsa,Malviya Nagar,13.4,25.8,null
+2026-03-30,17:17:25,CNR5003,No Driver Found,CID26109,Premier,Central Sec,Inderlok,13.1,28.5,null
+2026-03-30,22:08:00,CNR5004,Completed,CID99335,Bike,Ghitorni,Khan Market,5.3,19.6,null
+2026-03-30,12:29:38,CNR5005,Completed,CID19821,eBike,Palam Vihar,Jhilmil,null,null,null
+2026-03-30,18:01:39,CNR5006,Incomplete,CID46048,Go Sedan,Shastri Nagar,Gurgaon,4.9,14,null
+2026-03-30,08:56:10,CNR5007,Cancelled,CID92028,Auto,Khandsa,Malviya Nagar,13.4,25.8,null
+2026-03-30,17:17:25,CNR5008,No Driver Found,CID26109,Premier,Central Sec,Inderlok,13.1,28.5,null
+2026-03-30,22:08:00,CNR5009,Completed,CID99335,Bike,Ghitorni,Khan Market,5.3,19.6,null

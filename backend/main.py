@@ -18,8 +18,9 @@ Run with:
 
 import os
 import time
+import shutil
 from typing import Optional
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -100,6 +101,64 @@ def data_info():
         "sample_rows": exact_engine.get_sample_rows(5),
     }
 
+@app.post("/api/upload")
+def upload_dataset(file: UploadFile = File(...)):
+    """Upload a custom CSV/parquet file and re-initialize the engines."""
+    global df_full, exact_engine
+    
+    try:
+        file_ext = file.filename.split('.')[-1].lower()
+        if file_ext not in ["csv", "parquet"]:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=400, detail="Only .csv or .parquet files are supported.")
+            
+        upload_path = os.path.join(DATA_DIR, file.filename)
+        
+        # Save file
+        with open(upload_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        print(f"📥 Received file {file.filename}, reloading engines...")
+        
+        # 1. Reload Exact Engine (DuckDB)
+        exact_engine.reload_data(upload_path, is_csv=(file_ext == "csv"))
+        
+        # 2. Extract new full dataframe
+        df_full = exact_engine.get_dataframe()
+        
+        # 3. Flush the ApproxEngine cache with the new dataset
+        from engine.approx_engine import ApproxEngine
+        ApproxEngine.reset_cache(df_full)
+        
+        return {
+            "status": "success",
+            "message": f"Successfully loaded {file.filename} ({exact_engine.total_rows} rows).",
+            "columns": exact_engine.get_columns()
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail=f"Data Load Error: {str(e)}")
+
+@app.post("/api/data/reset")
+def reset_dataset():
+    """Reset the engine to use the default sample dataset (transactions.parquet)."""
+    global df_full, exact_engine
+    
+    print("🔄 Resetting to default sample dataset...")
+    # PARQUET_PATH is the original e-commerce file
+    exact_engine.reload_data(PARQUET_PATH, is_csv=False)
+    df_full = exact_engine.get_dataframe()
+    from engine.approx_engine import ApproxEngine
+    ApproxEngine.reset_cache(df_full)
+    
+    return {
+        "status": "success",
+        "message": "Successfully reset to sample dataset.",
+        "columns": exact_engine.get_columns()
+    }
+
 @app.post("/api/query/exact")
 def run_exact_query(req: QueryRequest):
     """Run an exact query using DuckDB."""
@@ -115,46 +174,53 @@ def run_approximate_query(req: QueryRequest):
 @app.post("/api/query/compare")
 def run_comparison_query(req: QueryRequest):
     """Run both exact and approximate queries and return side-by-side results."""
-    exact_result = _dispatch_query(req, engine_type="exact")
-    approx_result = _dispatch_query(req, engine_type="approximate")
+    try:
+        exact_result = _dispatch_query(req, engine_type="exact")
+        approx_result = _dispatch_query(req, engine_type="approximate")
 
-    # Calculate accuracy and speedup
-    exact_val = exact_result.get("result", 0)
-    approx_val = approx_result.get("result", 0)
+        # Calculate accuracy and speedup
+        exact_val = exact_result.get("result", 0)
+        approx_val = approx_result.get("result", 0)
 
-    if isinstance(exact_val, dict) and isinstance(approx_val, dict):
-        # GROUP BY: compute average error across groups
-        errors = []
-        for key in exact_val:
-            if key in approx_val and exact_val[key] != 0:
-                error = abs(exact_val[key] - approx_val[key]) / abs(exact_val[key]) * 100
-                errors.append(error)
-        error_pct = round(sum(errors) / len(errors), 2) if errors else 0
-    elif exact_val != 0:
-        error_pct = round(abs(exact_val - approx_val) / abs(exact_val) * 100, 2)
-    else:
-        error_pct = 0
+        if isinstance(exact_val, dict) and isinstance(approx_val, dict):
+            # GROUP BY: compute average error across groups
+            errors = []
+            for key in exact_val:
+                if key in approx_val and exact_val[key] != 0:
+                    error = abs(exact_val[key] - approx_val[key]) / abs(exact_val[key]) * 100
+                    errors.append(error)
+            error_pct = round(sum(errors) / len(errors), 2) if errors else 0
+        elif exact_val != 0:
+            error_pct = round(abs(exact_val - approx_val) / abs(exact_val) * 100, 2)
+        else:
+            error_pct = 0
 
-    exact_time = exact_result.get("time_ms", 1)
-    approx_time = approx_result.get("time_ms", 1)
-    speedup = round(exact_time / max(approx_time, 0.01), 2)
+        exact_time = exact_result.get("time_ms", 1)
+        approx_time = approx_result.get("time_ms", 1)
+        speedup = round(exact_time / max(approx_time, 0.01), 2)
 
-    exact_mem = exact_result.get("memory_bytes", 1)
-    approx_mem = approx_result.get("memory_bytes", 1)
+        exact_mem = exact_result.get("memory_bytes", 1)
+        approx_mem = approx_result.get("memory_bytes", 1)
 
-    return {
-        "exact": exact_result,
-        "approximate": approx_result,
-        "comparison": {
-            "error_pct": error_pct,
-            "accuracy_pct": round(100 - error_pct, 2),
-            "speedup": speedup,
-            "exact_time_ms": exact_time,
-            "approx_time_ms": approx_time,
-            "exact_memory_bytes": exact_mem,
-            "approx_memory_bytes": approx_mem,
-        },
-    }
+        return {
+            "exact": exact_result,
+            "approximate": approx_result,
+            "comparison": {
+                "error_pct": error_pct,
+                "accuracy_pct": round(100 - error_pct, 2),
+                "speedup": speedup,
+                "exact_time_ms": exact_time,
+                "approx_time_ms": approx_time,
+                "exact_memory_bytes": exact_mem,
+                "approx_memory_bytes": approx_mem,
+            },
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        from fastapi import HTTPException
+        # Return a 400 so the UI shows a red error message instead of a generic "Network Error"
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.post("/api/benchmark")

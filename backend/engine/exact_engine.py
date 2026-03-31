@@ -45,13 +45,10 @@ class ExactEngine:
         self.total_rows = result[0]
 
     def count(self, column: str = "*", where: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Run an exact COUNT query.
-
-        Example SQL: SELECT COUNT(*) FROM transactions WHERE region = 'North'
-        """
+        """Run an exact COUNT query."""
         where_clause = f"WHERE {where}" if where else ""
-        sql = f"SELECT COUNT({column}) FROM transactions {where_clause}"
+        col_safe = f'"{column}"' if column != "*" else "*"
+        sql = f"SELECT COUNT({col_safe}) FROM transactions {where_clause}"
 
         start = time.perf_counter()
         result = self.conn.execute(sql).fetchone()[0]
@@ -67,13 +64,10 @@ class ExactEngine:
         }
 
     def count_distinct(self, column: str, where: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Run an exact COUNT DISTINCT query.
-
-        Example SQL: SELECT COUNT(DISTINCT user_id) FROM transactions
-        """
+        """Run an exact COUNT DISTINCT query."""
         where_clause = f"WHERE {where}" if where else ""
-        sql = f"SELECT COUNT(DISTINCT {column}) FROM transactions {where_clause}"
+        col_safe = f'"{column}"'
+        sql = f"SELECT COUNT(DISTINCT {col_safe}) FROM transactions {where_clause}"
 
         start = time.perf_counter()
         result = self.conn.execute(sql).fetchone()[0]
@@ -89,13 +83,10 @@ class ExactEngine:
         }
 
     def sum(self, column: str, where: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Run an exact SUM query.
-
-        Example SQL: SELECT SUM(amount) FROM transactions
-        """
+        """Run an exact SUM query with graceful type coercion."""
         where_clause = f"WHERE {where}" if where else ""
-        sql = f"SELECT SUM({column}) FROM transactions {where_clause}"
+        col_safe = f'TRY_CAST("{column}" AS DOUBLE)'
+        sql = f"SELECT SUM({col_safe}) FROM transactions {where_clause}"
 
         start = time.perf_counter()
         result = self.conn.execute(sql).fetchone()[0]
@@ -111,13 +102,10 @@ class ExactEngine:
         }
 
     def avg(self, column: str, where: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Run an exact AVG query.
-
-        Example SQL: SELECT AVG(amount) FROM transactions
-        """
+        """Run an exact AVG query with graceful type coercion."""
         where_clause = f"WHERE {where}" if where else ""
-        sql = f"SELECT AVG({column}) FROM transactions {where_clause}"
+        col_safe = f'TRY_CAST("{column}" AS DOUBLE)'
+        sql = f"SELECT AVG({col_safe}) FROM transactions {where_clause}"
 
         start = time.perf_counter()
         result = self.conn.execute(sql).fetchone()[0]
@@ -139,23 +127,27 @@ class ExactEngine:
         agg_func: str = "AVG",
         where: Optional[str] = None,
     ) -> Dict[str, Any]:
-        """
-        Run an exact GROUP BY query.
-
-        Example SQL: SELECT region, AVG(amount) FROM transactions GROUP BY region
-        """
+        """Run an exact GROUP BY query with graceful type coercion."""
         where_clause = f"WHERE {where}" if where else ""
+        g_safe = f'"{group_column}"'
+        # Only cast if it's a numeric aggregation (AVG or SUM)
+        if agg_func.upper() in ["AVG", "SUM"]:
+            a_safe = f'TRY_CAST("{agg_column}" AS DOUBLE)'
+        else:
+            a_safe = f'"{agg_column}"' if agg_column != "*" else "*"
+            
         sql = (
-            f"SELECT {group_column}, {agg_func}({agg_column}) as agg_value "
+            f"SELECT {g_safe}, {agg_func}({a_safe}) as agg_value "
             f"FROM transactions {where_clause} "
-            f"GROUP BY {group_column} ORDER BY {group_column}"
+            f"GROUP BY {g_safe} ORDER BY {g_safe}"
         )
 
         start = time.perf_counter()
         rows = self.conn.execute(sql).fetchall()
         elapsed = time.perf_counter() - start
 
-        result = {str(row[0]): round(float(row[1]), 2) for row in rows}
+        # Robust result parsing: Handle NULL (None) values from failed casts
+        result = {str(row[0]): round(float(row[1]), 2) if row[1] is not None else 0 for row in rows}
 
         return {
             "query_type": "GROUP_BY",
@@ -170,6 +162,19 @@ class ExactEngine:
         """Return the column names and types of the transactions table."""
         info = self.conn.execute("DESCRIBE transactions").fetchall()
         return [{"name": row[0], "type": row[1]} for row in info]
+
+    def reload_data(self, file_path: str, is_csv: bool = True):
+        """Reload the DuckDB table with a manually uploaded dataset."""
+        print(f"🔄 Reloading Exact Engine with {file_path}")
+        self.conn.execute("DROP TABLE IF EXISTS transactions")
+        escaped_path = file_path.replace(chr(92), '/')
+        if is_csv:
+            self.conn.execute(f"CREATE TABLE transactions AS SELECT * FROM read_csv_auto('{escaped_path}', header=True, ignore_errors=true)")
+        else:
+            self.conn.execute(f"CREATE TABLE transactions AS SELECT * FROM read_parquet('{escaped_path}')")
+            
+        result = self.conn.execute("SELECT COUNT(*) FROM transactions").fetchone()
+        self.total_rows = result[0]
 
     def get_sample_rows(self, n: int = 5):
         """Return a few sample rows for preview."""

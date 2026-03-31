@@ -14,11 +14,28 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-/**
- * Get dataset info (total rows, columns, sample rows).
- */
 export async function getDataInfo() {
   const res = await api.get("/api/data/info");
+  return res.data;
+}
+
+/**
+ * Upload a manual CSV or Parquet dataset.
+ */
+export async function uploadDataset(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await api.post("/api/upload", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return res.data;
+}
+
+/**
+ * Reset dataset to original sample data.
+ */
+export async function resetDataset() {
+  const res = await api.post("/api/data/reset");
   return res.data;
 }
 

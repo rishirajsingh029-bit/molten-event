@@ -1,19 +1,22 @@
 import React, { useEffect, useState } from 'react';
 
+/**
+ * AlgorithmVisualizer
+ * ------------------
+ * Overhauled to match the Neo-Purple aesthetic.
+ * Simulates real-time probabilistic data structure operations.
+ */
+
 export default function AlgorithmVisualizer({ technique }) {
   const [activeNodes, setActiveNodes] = useState([]);
 
   useEffect(() => {
-    // Generate a random flashing effect to simulate algorithm computation
     const interval = setInterval(() => {
       if (technique.includes("HyperLogLog")) {
-        // Light up random buckets
         setActiveNodes(Array.from({ length: 16 }).map(() => Math.random() > 0.7));
       } else if (technique.includes("Reservoir")) {
-        // Swap random elements in the array
         setActiveNodes(Array.from({ length: 48 }).map(() => Math.random() > 0.9));
       } else if (technique.includes("CMS") || technique.includes("proportion")) {
-        // Count min sketch hash matrix
         setActiveNodes(Array.from({ length: 24 }).map(() => Math.random() > 0.85));
       }
     }, 150);
@@ -25,18 +28,21 @@ export default function AlgorithmVisualizer({ technique }) {
     if (technique.includes("HyperLogLog")) {
       return (
         <div className="flex flex-col gap-2">
-          <div className="text-xs text-primary-300 font-mono mb-1">h(x) = 010110...</div>
+          <div className="text-[8px] text-neon-cyan font-mono mb-1 uppercase tracking-tighter">h(x) = 010110...</div>
           <div className="flex flex-wrap gap-1">
             {activeNodes.map((isActive, i) => (
               <div 
                 key={i} 
-                className={`w-6 h-6 rounded flex items-center justify-center text-[10px] font-mono transition-all duration-150 ${isActive ? 'bg-primary-500 text-white shadow-[0_0_10px_rgba(168,85,247,0.8)] scale-110' : 'bg-surface-700 text-gray-500'}`}
+                className={`w-5 h-5 rounded-lg flex items-center justify-center text-[8px] font-mono transition-all duration-150 border ${
+                  isActive 
+                    ? 'bg-neon-cyan text-black border-white shadow-[0_0_15px_rgba(0,245,212,0.6)] scale-110' 
+                    : 'bg-black/40 text-white/20 border-white/5'
+                }`}
               >
                 {isActive ? '0' : '1'}
               </div>
             ))}
           </div>
-          <div className="text-[10px] text-gray-400 mt-2">Computing Longest Leading Zeros</div>
         </div>
       );
     }
@@ -44,52 +50,58 @@ export default function AlgorithmVisualizer({ technique }) {
     if (technique.includes("Reservoir")) {
       return (
         <div className="flex flex-col gap-2">
-          <div className="text-xs text-blue-300 font-mono mb-1">P(replace) = k/i</div>
-          <div className="grid grid-cols-12 gap-1">
+          <div className="text-[8px] text-neon-pink font-mono mb-1 uppercase tracking-tighter">P(replace) = k/i</div>
+          <div className="grid grid-cols-12 gap-1.5">
             {activeNodes.map((isActive, i) => (
               <div 
                 key={i} 
-                className={`w-3 h-3 rounded-full transition-all duration-150 ${isActive ? 'bg-blue-400 scale-150 shadow-[0_0_8px_rgba(96,165,250,0.8)]' : 'bg-surface-600'}`}
+                className={`w-2.5 h-2.5 rounded-full transition-all duration-150 ${
+                  isActive 
+                    ? 'bg-neon-pink scale-125 shadow-[0_0_10px_rgba(241,91,181,0.6)]' 
+                    : 'bg-white/5 border border-white/5'
+                }`}
               />
             ))}
           </div>
-          <div className="text-[10px] text-gray-400 mt-2">Uniform Random Sub-population Maintained</div>
         </div>
       );
     }
 
+    // Default: CMS
     return (
       <div className="flex flex-col gap-2">
-        <div className="text-xs text-emerald-300 font-mono mb-1">min(h₁(x), h₂(x), h₃(x))</div>
-        <div className="grid grid-rows-3 gap-1">
+        <div className="text-[8px] text-neon-magenta font-mono mb-1 uppercase tracking-tighter">min(h₁(x), h₂(x), h₃(x))</div>
+        <div className="grid grid-rows-3 gap-1.5">
           {[0, 1, 2].map(row => (
-            <div key={row} className="flex gap-1">
+            <div key={row} className="flex gap-1.5">
               {activeNodes.slice(row * 8, row * 8 + 8).map((isActive, i) => (
                 <div 
                   key={i} 
-                  className={`w-4 h-4 rounded-sm transition-all duration-150 ${isActive ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'bg-surface-700 border border-white/5'}`}
+                  className={`w-3.5 h-3.5 rounded-md transition-all duration-150 border ${
+                    isActive 
+                      ? 'bg-neon-magenta border-white shadow-[0_0_10px_rgba(155,93,229,0.5)]' 
+                      : 'bg-black/40 border-white/5'
+                  }`}
                 />
               ))}
             </div>
           ))}
         </div>
-        <div className="text-[10px] text-gray-400 mt-2">Frequency Matrix Hash Collisions</div>
       </div>
     );
   };
 
   return (
-    <div className="p-4 bg-surface-800/50 rounded-xl border border-white/[0.05] mt-4 flex items-center justify-between">
-      <div>
-        <h4 className="text-sm font-semibold text-white mb-2 ml-1">Live Computation Matrix</h4>
-        <div className="pl-1">
+    <div className="p-6 bg-black/40 rounded-[30px] border border-white/5 mt-6 flex items-center justify-between shadow-inner">
+      <div className="flex-1">
+        <h4 className="neo-label text-[8px] mb-4 text-white/40">Computation Matrix</h4>
+        <div className="pr-4">
           {renderVisual()}
         </div>
       </div>
-      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-surface-900 border border-white/10 shadow-inner relative overflow-hidden">
-        {/* Subtle scanning line effect */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary-500/20 to-transparent h-[200%] animate-[scan_2s_linear_infinite]" />
-        <span className="text-xl relative z-10">⚙️</span>
+      <div className="flex items-center justify-center w-14 h-14 rounded-full bg-black/60 border border-white/10 relative overflow-hidden flex-shrink-0">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-transparent h-[200%] animate-[pulse_2s_infinite]" />
+        <span className="text-xl relative z-10 opacity-60">⚙️</span>
       </div>
     </div>
   );

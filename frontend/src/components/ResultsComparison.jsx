@@ -7,16 +7,14 @@ import AlgorithmVisualizer from "./AlgorithmVisualizer";
 /**
  * ResultsComparison
  * ------------------
- * Side-by-side comparison of exact vs approximate query results.
- *
- * Brownie Point: "Comparison UI where users can compare approximate vs exact results"
+ * Overhauled to match the Figma "Geometric Purple" Results cards.
+ * Features neon labels and high-contrast data visualization.
  */
 
 export default function ResultsComparison({ data }) {
   if (!data) return null;
 
   const { exact, approximate, comparison } = data;
-
   const isGroupBy = typeof exact.result === "object" && exact.result !== null;
 
   // Prepare chart data for GROUP BY results
@@ -29,23 +27,6 @@ export default function ResultsComparison({ data }) {
       }))
     : null;
 
-  // Accuracy color
-  const getAccuracyColor = (pct) => {
-    if (pct >= 98) return "text-emerald-400";
-    if (pct >= 95) return "text-green-400";
-    if (pct >= 90) return "text-blue-400";
-    if (pct >= 85) return "text-amber-400";
-    return "text-red-400";
-  };
-
-  // Speedup color
-  const getSpeedupColor = (x) => {
-    if (x >= 5) return "text-emerald-400";
-    if (x >= 3) return "text-green-400";
-    if (x >= 2) return "text-amber-400";
-    return "text-gray-400";
-  };
-
   const formatMemory = (bytes) => {
     if (!bytes) return "0 B";
     if (bytes >= 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + " MB";
@@ -56,150 +37,157 @@ export default function ResultsComparison({ data }) {
   const exactMemStr = formatMemory(comparison.exact_memory_bytes);
   const approxMemStr = formatMemory(comparison.approx_memory_bytes);
   const memReduction = comparison.exact_memory_bytes 
-    ? (((comparison.exact_memory_bytes - comparison.approx_memory_bytes) / comparison.exact_memory_bytes) * 100).toFixed(2)
+    ? (((comparison.exact_memory_bytes - comparison.approx_memory_bytes) / comparison.exact_memory_bytes) * 100).toFixed(1)
     : 0;
 
   return (
-    <div className="space-y-6 animate-in">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="space-y-10 animate-in">
+      {/* Summary Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Accuracy */}
-        <div className="glass-card p-5 text-center">
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Accuracy</p>
-          <p className={`text-3xl font-bold ${getAccuracyColor(comparison.accuracy_pct)}`}>
+        <div className="neo-card p-8 border-t-4 border-t-neon-cyan">
+          <p className="neo-label mb-3">Accuracy</p>
+          <p className="text-4xl font-geometric font-black text-neon-cyan drop-shadow-[0_0_8px_rgba(0,245,212,0.4)]">
             {comparison.accuracy_pct}%
           </p>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-[10px] text-white/30 uppercase tracking-widest mt-2">
             Error: {comparison.error_pct}%
           </p>
         </div>
 
         {/* Speedup */}
-        <div className="glass-card p-5 text-center">
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Speedup</p>
-          <p className={`text-3xl font-bold ${getSpeedupColor(comparison.speedup)}`}>
+        <div className="neo-card p-8 border-t-4 border-t-neon-pink">
+          <p className="neo-label mb-3">Speedup</p>
+          <p className="text-4xl font-geometric font-black text-neon-pink drop-shadow-[0_0_8px_rgba(241,91,181,0.4)]">
             {comparison.speedup}×
           </p>
-          <p className="text-xs text-gray-500 mt-1">faster than exact</p>
+          <p className="text-[10px] text-white/30 uppercase tracking-widest mt-2">
+            Faster than DuckDB
+          </p>
         </div>
 
         {/* Time Comparison */}
-        <div className="glass-card p-5 text-center">
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Time</p>
-          <div className="flex items-center justify-center gap-3">
-            <div>
-              <p className="text-lg font-bold text-gray-300">{comparison.exact_time_ms}ms</p>
-              <p className="text-[10px] text-gray-500">Exact</p>
-            </div>
-            <span className="text-gray-600">→</span>
-            <div>
-              <p className="text-lg font-bold text-primary-400">{comparison.approx_time_ms}ms</p>
-              <p className="text-[10px] text-gray-500">Approx</p>
-            </div>
-          </div>
+        <div className="neo-card p-8 border-t-4 border-t-white/20">
+          <p className="neo-label mb-3">Memory Reduction</p>
+          <p className="text-4xl font-geometric font-black text-green-400 drop-shadow-[0_0_8px_rgba(74,222,128,0.4)]">
+            {memReduction}%
+          </p>
+          <p className="text-[10px] text-white/30 uppercase tracking-widest mt-2">
+            RAM Footprint Saved
+          </p>
         </div>
 
-        {/* Memory Footprint */}
-        <div className="glass-card p-5 text-center border-t-2 border-t-blue-500/50">
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">RAM Footprint</p>
-          <div className="flex items-center justify-center gap-3">
-            <div className="line-through opacity-50">
-              <p className="text-sm font-bold text-gray-300">{exactMemStr}</p>
-            </div>
-            <span className="text-gray-600">→</span>
-            <div>
-              <p className="text-lg font-bold text-blue-400">{approxMemStr}</p>
-            </div>
-          </div>
-          <p className="text-[10px] text-emerald-400 mt-2">⭐ {memReduction}% Less Memory</p>
+        {/* Techniques */}
+        <div className="neo-card p-8 border-t-4 border-t-neon-magenta">
+          <p className="neo-label mb-3">Technique</p>
+          <p className="text-xl font-header font-black text-neon-magenta truncate">
+            {approximate.technique}
+          </p>
+          <p className="text-[10px] text-white/30 uppercase tracking-widest mt-2">
+            Sample: {approximate.sample_size?.toLocaleString()} rows
+          </p>
         </div>
       </div>
 
-      {/* Side-by-Side Results */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Exact Result */}
-        <div className="glass-card p-5 border-l-4 border-l-blue-500/50">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-300">🎯 Exact Result</h3>
-            <span className="badge-blue">DuckDB</span>
+      {/* Main Comparison Area */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Exact Section */}
+        <div className="neo-card p-10 space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="neo-title">Exact Result</h3>
+            <span className="badge-neon-green">DuckDB Engine</span>
           </div>
-          {isGroupBy ? (
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {Object.entries(exact.result).map(([key, val]) => (
-                <div key={key} className="flex justify-between py-1.5 px-3 rounded-lg bg-surface-900/50 text-sm">
-                  <span className="text-gray-400">{key}</span>
-                  <span className="font-mono font-semibold text-gray-200">{val.toLocaleString()}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-3xl font-bold text-gray-100 font-mono">
-              {typeof exact.result === "number" ? exact.result.toLocaleString() : exact.result}
-            </p>
-          )}
-          <p className="text-xs text-gray-500 mt-3">
-            ⏱ {exact.time_ms}ms • {exact.sql && <span className="font-mono">{exact.query_type}</span>}
-          </p>
+          <div className="py-10 border-y border-white/5">
+            {isGroupBy ? (
+              <div className="space-y-3 max-h-80 overflow-y-auto pr-4 custom-scrollbar">
+                {Object.entries(exact.result).map(([key, val]) => (
+                  <div key={key} className="flex justify-between items-center py-3 px-5 rounded-2xl bg-black/30 border border-white/5">
+                    <span className="neo-label text-white/40">{key}</span>
+                    <span className="font-mono font-bold text-white text-lg">{val.toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center">
+                <p className="text-6xl font-geometric font-black text-white">
+                  {typeof exact.result === "number" ? exact.result.toLocaleString() : exact.result}
+                </p>
+                <p className="neo-label mt-4">Calculated from 100% of data</p>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-between neo-label">
+            <span>Latency: {comparison.exact_time_ms}ms</span>
+            <span>RAM: {exactMemStr}</span>
+          </div>
         </div>
 
-        {/* Approximate Result */}
-        <div className="glass-card p-5 border-l-4 border-l-purple-500/50">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-300">≈ Approximate Result</h3>
-            <span className="badge-green">{approximate.technique}</span>
+        {/* Approximate Section */}
+        <div className="neo-card p-10 space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="neo-title text-neon-cyan">Approximate Result</h3>
+            <span className="px-3 py-1 bg-neon-cyan text-black text-[10px] font-black rounded-full uppercase tracking-tighter">
+              {approximate.technique}
+            </span>
           </div>
-          {isGroupBy ? (
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {Object.entries(approximate.result).map(([key, val]) => {
-                const exactVal = exact.result[key] || 0;
-                const err = exactVal ? Math.abs(val - exactVal) / exactVal * 100 : 0;
-                return (
-                  <div key={key} className="flex justify-between py-1.5 px-3 rounded-lg bg-surface-900/50 text-sm">
-                    <span className="text-gray-400">{key}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-semibold text-gray-200">{val.toLocaleString()}</span>
-                      <span className={`text-[10px] ${err < 2 ? "text-emerald-400" : err < 5 ? "text-amber-400" : "text-red-400"}`}>
-                        {err.toFixed(1)}%
-                      </span>
+          <div className="py-10 border-y border-white/5">
+            {isGroupBy ? (
+              <div className="space-y-3 max-h-80 overflow-y-auto pr-4 custom-scrollbar">
+                {Object.entries(approximate.result).map(([key, val]) => {
+                  const exactVal = exact.result[key] || 0;
+                  const err = exactVal ? Math.abs(val - exactVal) / exactVal * 100 : 0;
+                  return (
+                    <div key={key} className="flex justify-between items-center py-3 px-5 rounded-2xl bg-black/30 border border-white/5">
+                      <span className="neo-label text-neon-cyan/40">{key}</span>
+                      <div className="flex items-center gap-4">
+                        <span className="font-mono font-bold text-neon-cyan text-lg">{val.toLocaleString()}</span>
+                        <span className={`text-[10px] font-black ${err < 2 ? "text-green-400" : "text-neon-pink"}`}>
+                          {err.toFixed(1)}% Error
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-3xl font-bold text-primary-300 font-mono">
-              {typeof approximate.result === "number" ? approximate.result.toLocaleString() : approximate.result}
-            </p>
-          )}
-          <p className="text-xs text-gray-500 mt-3">
-            ⏱ {approximate.time_ms}ms • Accuracy target: {approximate.accuracy_target * 100}%
-          </p>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center">
+                <p className="text-6xl font-geometric font-black text-neon-cyan drop-shadow-[0_0_15px_rgba(0,245,212,0.3)]">
+                  {typeof approximate.result === "number" ? approximate.result.toLocaleString() : approximate.result}
+                </p>
+                <p className="neo-label mt-4 text-neon-cyan/60">Estimated via {approximate.technique}</p>
+              </div>
+            )}
+          </div>
+          <div className="flex justify-between neo-label">
+            <span className="text-neon-cyan">Latency: {comparison.approx_time_ms}ms</span>
+            <span className="text-neon-cyan">RAM: {approxMemStr}</span>
+          </div>
 
           <AlgorithmVisualizer technique={approximate.technique} />
         </div>
       </div>
 
-      {/* GROUP BY Chart */}
+      {/* Visual Chart Area */}
       {isGroupBy && chartData && (
-        <div className="glass-card p-6">
-          <h3 className="text-sm font-semibold text-gray-300 mb-4">📊 Visual Comparison</h3>
-          <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis dataKey="name" tick={{ fill: "#94a3b8", fontSize: 11 }} />
-              <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} />
+        <div className="neo-card p-10">
+          <h3 className="neo-title mb-8">Side-by-Side Distribution</h3>
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+              <XAxis dataKey="name" tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 10, fontFamily: 'Orbitron' }} />
+              <YAxis tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 10, fontFamily: 'Orbitron' }} />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: "#0f172a",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  borderRadius: "12px",
+                  backgroundColor: "#0d0221",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "20px",
                   fontSize: "12px",
+                  fontFamily: 'Outfit'
                 }}
-                labelStyle={{ color: "#e2e8f0" }}
               />
-              <Legend wrapperStyle={{ fontSize: "12px" }} />
-              <Bar dataKey="Exact" fill="#6366f1" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="Approximate" fill="#a855f7" radius={[6, 6, 0, 0]} />
+              <Legend wrapperStyle={{ fontSize: "10px", marginTop: "20px", fontFamily: 'Silkscreen' }} />
+              <Bar dataKey="Exact" fill="#ffffff" radius={[10, 10, 0, 0]} />
+              <Bar dataKey="Approximate" fill="#00f5d4" radius={[10, 10, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

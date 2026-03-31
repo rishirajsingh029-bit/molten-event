@@ -1,31 +1,57 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  BarChart, Bar, LineChart, Line, ScatterChart, Scatter,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  BarChart, Bar, ScatterChart, Scatter,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { runBenchmark } from "../utils/api";
+import { runBenchmark, getDataInfo } from "../utils/api";
 
 /**
  * BenchmarkChart
  * ---------------
- * Runs speed vs accuracy benchmarks and visualizes results.
- * Deliverable #3: "Benchmarks showing speed vs accuracy trade-offs"
+ * Overhauled to match the Figma Benchmarks Mockup.
+ * Features a high-intensity cyan "Run" button and deep purple neo-cards.
  */
 
 export default function BenchmarkChart() {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+  
+  const [numericCols, setNumericCols] = useState([]);
+  const [selectedColumn, setSelectedColumn] = useState("");
+
+  useEffect(() => {
+    fetchSchema();
+  }, []);
+
+  const fetchSchema = async () => {
+    try {
+      const info = await getDataInfo();
+      if (info && info.columns) {
+        const numCols = info.columns
+          .filter(c => /INT|DOUBLE|FLOAT|DECIMAL|NUMERIC/.test(c.type.toUpperCase()))
+          .map(c => c.name);
+        setNumericCols(numCols);
+        if (numCols.length > 0) setSelectedColumn(numCols[0]);
+      }
+    } catch (err) {
+      console.error("Benchmark: Schema fetch failed", err);
+    }
+  };
 
   const handleRun = async () => {
+    if (!selectedColumn) {
+      setError("Please select a column to benchmark.");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
       const result = await runBenchmark({
         accuracy_levels: [0.80, 0.85, 0.90, 0.95, 0.99],
         query_types: ["count_distinct", "sum", "avg"],
-        column: "amount",
-        iterations: 3,
+        column: selectedColumn,
+        iterations: 2,
       });
       setData(result.benchmarks);
     } catch (err) {
@@ -35,34 +61,15 @@ export default function BenchmarkChart() {
     }
   };
 
-  // Transform data for time comparison chart
-  const getTimeData = () => {
-    if (!data) return [];
-    const grouped = {};
-    data.forEach((item) => {
-      const key = `${Math.round(item.accuracy_target * 100)}%`;
-      if (!grouped[key]) {
-        grouped[key] = { accuracy: key };
-      }
-      grouped[key][`${item.query_type}_exact`] = item.avg_exact_time_ms;
-      grouped[key][`${item.query_type}_approx`] = item.avg_approx_time_ms;
-    });
-    return Object.values(grouped);
-  };
-
-  // Transform for speedup chart
   const getSpeedupData = () => {
     if (!data) return [];
     return data.map((item) => ({
       name: `${item.query_type} @ ${Math.round(item.accuracy_target * 100)}%`,
       speedup: item.avg_speedup,
       error_pct: item.avg_error_pct,
-      query_type: item.query_type,
-      accuracy: item.accuracy_target,
     }));
   };
 
-  // Error vs Speedup trade-off scatter data
   const getTradeoffData = () => {
     if (!data) return [];
     return data.map((item) => ({
@@ -74,91 +81,90 @@ export default function BenchmarkChart() {
 
   const CHART_TOOLTIP = {
     contentStyle: {
-      backgroundColor: "#0f172a",
-      border: "1px solid rgba(255,255,255,0.06)",
-      borderRadius: "12px",
+      backgroundColor: "#0d0221",
+      border: "1px solid rgba(255,255,255,0.1)",
+      borderRadius: "20px",
       fontSize: "12px",
+      fontFamily: 'Outfit'
     },
     labelStyle: { color: "#e2e8f0" },
   };
 
   return (
-    <div className="space-y-6 animate-in">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="section-title">📊 Benchmarks</h2>
-          <p className="text-gray-400 mt-2 text-sm">
-            Speed vs accuracy trade-off analysis across different accuracy targets.
+    <div className="space-y-10 animate-in mt-6">
+      <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
+        <div className="text-center lg:text-left">
+          <h2 className="section-title-neo">Benchmarks</h2>
+          <p className="text-white/60 tracking-wider text-sm mt-3 font-sans max-w-xl">
+             Speed vs accuracy trade-off analysis across different targets.
           </p>
         </div>
-        <button
-          onClick={handleRun}
-          disabled={loading}
-          className="btn-primary flex items-center gap-2 disabled:opacity-50 whitespace-nowrap"
-        >
-          {loading ? (
-            <>
-              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              Running Benchmarks...
-            </>
-          ) : (
-            <>🚀 Run Benchmarks</>
-          )}
-        </button>
+        
+        <div className="flex items-center gap-6">
+          <div className="text-right">
+            <p className="neo-label mb-2 text-white/30">Target Column</p>
+            <select
+              value={selectedColumn}
+              onChange={(e) => setSelectedColumn(e.target.value)}
+              className="bg-black/40 border border-white/10 rounded-xl px-4 py-2 text-xs text-white focus:outline-none focus:border-neon-cyan/50"
+            >
+              {numericCols.map(col => (
+                <option key={col} value={col}>{col}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={handleRun}
+            disabled={loading || !selectedColumn}
+            className="px-10 py-4 bg-neon-cyan text-black font-black text-xs rounded-full uppercase tracking-widest shadow-[0_0_25px_rgba(0,245,212,0.4)] hover:scale-105 active:scale-95 transition-all self-end"
+          >
+            {loading ? <span className="animate-pulse">Analyzing...</span> : "Run Benchmarks"}
+          </button>
+        </div>
       </div>
 
       {error && (
-        <div className="glass-card p-4 border-red-500/30">
-          <p className="text-red-400 text-sm">❌ {error}</p>
+        <div className="neo-card p-6 border-neon-pink/20 bg-neon-pink/5">
+          <p className="text-neon-pink font-bold text-sm tracking-widest uppercase">❌ {error}</p>
         </div>
       )}
 
       {!data && !loading && (
-        <div className="glass-card p-12 text-center">
-          <p className="text-5xl mb-4">📈</p>
-          <p className="text-gray-400">Click "Run Benchmarks" to generate speed vs accuracy data.</p>
-          <p className="text-gray-600 text-sm mt-2">
-            Tests COUNT DISTINCT, SUM, AVG across 5 accuracy levels (80%-99%).
-          </p>
+        <div className="neo-card p-24 text-center border-dashed border-white/10 opacity-60">
+           <div className="w-20 h-20 mx-auto mb-6 bg-white/5 rounded-2xl flex items-center justify-center">
+             <span className="text-4xl text-white/20">📈</span>
+           </div>
+           <p className="neo-title text-white/40 mb-3">No data generated yet</p>
+           <p className="neo-label">Click "Run Benchmarks" to generate speed vs accuracy data </p>
+           <p className="text-[9px] text-white/20 uppercase tracking-[0.2em] mt-2">Tests COUNT DISTINCT, SUM, AVG across 5 accuracy levels (80-99%)</p>
         </div>
       )}
 
       {data && (
-        <div className="space-y-6">
+        <div className="space-y-10">
           {/* Summary Table */}
-          <div className="glass-card p-6 overflow-x-auto">
-            <h3 className="text-sm font-semibold text-gray-300 mb-4">📋 Benchmark Results</h3>
-            <table className="w-full text-sm">
+          <div className="neo-card p-10 overflow-x-auto">
+            <h3 className="neo-title mb-6">Aggregate Statistics</h3>
+            <table className="w-full text-xs">
               <thead>
                 <tr className="border-b border-white/5">
-                  <th className="text-left py-2 px-3 text-gray-500 font-medium">Query</th>
-                  <th className="text-left py-2 px-3 text-gray-500 font-medium">Accuracy Target</th>
-                  <th className="text-right py-2 px-3 text-gray-500 font-medium">Exact (ms)</th>
-                  <th className="text-right py-2 px-3 text-gray-500 font-medium">Approx (ms)</th>
-                  <th className="text-right py-2 px-3 text-gray-500 font-medium">Speedup</th>
-                  <th className="text-right py-2 px-3 text-gray-500 font-medium">Error %</th>
+                  <th className="text-left pb-4 neo-label">Query</th>
+                  <th className="text-left pb-4 neo-label">Accuracy</th>
+                  <th className="text-right pb-4 neo-label">Exact</th>
+                  <th className="text-right pb-4 neo-label">Approx</th>
+                  <th className="text-right pb-4 neo-label">Speedup</th>
+                  <th className="text-right pb-4 neo-label text-neon-pink">Error %</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="font-mono">
                 {data.map((row, i) => (
-                  <tr key={i} className="border-b border-white/[0.03] hover:bg-white/[0.02] transition">
-                    <td className="py-2 px-3 font-mono text-gray-300">{row.query_type}</td>
-                    <td className="py-2 px-3 text-gray-300">{Math.round(row.accuracy_target * 100)}%</td>
-                    <td className="py-2 px-3 text-right text-gray-400">{row.avg_exact_time_ms}</td>
-                    <td className="py-2 px-3 text-right text-primary-400 font-semibold">{row.avg_approx_time_ms}</td>
-                    <td className="py-2 px-3 text-right">
-                      <span className={`font-bold ${row.avg_speedup >= 3 ? "text-emerald-400" : row.avg_speedup >= 2 ? "text-amber-400" : "text-gray-400"}`}>
-                        {row.avg_speedup}×
-                      </span>
-                    </td>
-                    <td className="py-2 px-3 text-right">
-                      <span className={`${row.avg_error_pct < 2 ? "text-emerald-400" : row.avg_error_pct < 5 ? "text-amber-400" : "text-red-400"}`}>
-                        {row.avg_error_pct}%
-                      </span>
-                    </td>
+                  <tr key={i} className="border-b border-white/[0.03] hover:bg-white/[0.02]">
+                    <td className="py-4 text-white/70">{row.query_type}</td>
+                    <td className="py-4 text-white/70">{Math.round(row.accuracy_target * 100)}%</td>
+                    <td className="py-4 text-right text-white/50">{row.avg_exact_time_ms}ms</td>
+                    <td className="py-4 text-right text-neon-cyan">{row.avg_approx_time_ms}ms</td>
+                    <td className="py-4 text-right font-black text-white">{row.avg_speedup}x</td>
+                    <td className="py-4 text-right text-neon-pink">{row.avg_error_pct}%</td>
                   </tr>
                 ))}
               </tbody>
@@ -166,40 +172,29 @@ export default function BenchmarkChart() {
           </div>
 
           {/* Charts Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Speedup Bar Chart */}
-            <div className="glass-card p-6">
-              <h3 className="text-sm font-semibold text-gray-300 mb-4">🚀 Speedup Comparison</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="neo-card p-10">
+              <p className="neo-title mb-8 text-neon-pink">Speedup Multiplier</p>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={getSpeedupData()} margin={{ top: 5, right: 20, left: 10, bottom: 60 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                  <XAxis dataKey="name" tick={{ fill: "#94a3b8", fontSize: 9 }} angle={-35} textAnchor="end" />
-                  <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} label={{ value: "Speedup (×)", angle: -90, position: "insideLeft", fill: "#94a3b8", fontSize: 11 }} />
+                <BarChart data={getSpeedupData()}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="name" tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 8, fontFamily: 'Orbitron' }} />
+                  <YAxis tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 9, fontFamily: 'Orbitron' }} />
                   <Tooltip {...CHART_TOOLTIP} />
-                  <Bar dataKey="speedup" fill="url(#speedupGradient)" radius={[6, 6, 0, 0]} />
-                  <defs>
-                    <linearGradient id="speedupGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#6366f1" />
-                      <stop offset="100%" stopColor="#a855f7" />
-                    </linearGradient>
-                  </defs>
+                  <Bar dataKey="speedup" fill="#f15bb5" radius={[10, 10, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
 
-            {/* Error vs Speedup Scatter */}
-            <div className="glass-card p-6">
-              <h3 className="text-sm font-semibold text-gray-300 mb-4">⚖️ Speed vs Accuracy Trade-off</h3>
+            <div className="neo-card p-10">
+              <p className="neo-title mb-8 text-neon-cyan">Accuracy Trade-off</p>
               <ResponsiveContainer width="100%" height={300}>
-                <ScatterChart margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                  <XAxis dataKey="speedup" name="Speedup" unit="×" tick={{ fill: "#94a3b8", fontSize: 11 }} />
-                  <YAxis dataKey="error" name="Error" unit="%" tick={{ fill: "#94a3b8", fontSize: 11 }} />
-                  <Tooltip
-                    {...CHART_TOOLTIP}
-                    formatter={(value, name) => [typeof value === 'number' ? value.toFixed(2) : value, name]}
-                  />
-                  <Scatter data={getTradeoffData()} fill="#6366f1" />
+                <ScatterChart>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="speedup" name="Speedup" unit="x" tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 8, fontFamily: 'Orbitron' }} />
+                  <YAxis dataKey="error" name="Error" unit="%" tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 9, fontFamily: 'Orbitron' }} />
+                  <Tooltip {...CHART_TOOLTIP} />
+                  <Scatter data={getTradeoffData()} fill="#00f5d4" />
                 </ScatterChart>
               </ResponsiveContainer>
             </div>
