@@ -48,7 +48,7 @@ export default function HeroLanding() {
             onClick={() => navigate("/analysis")}
             className="group relative px-12 py-4 text-xs md:text-sm tracking-[0.4em] font-black text-white uppercase bg-white/5 hover:bg-white/10 rounded-full border border-white/20 transition-all duration-500 hover:scale-110 hover:border-primary-400 hover:shadow-[0_0_40px_rgba(168,85,247,0.3)] backdrop-blur-sm"
           >
-            <span className="relative z-10">Let's Start</span>
+            <span className="relative z-10">Speedup</span>
             {/* Subtle inner glow */}
             <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-transparent via-primary-500/20 to-transparent" />
           </button>

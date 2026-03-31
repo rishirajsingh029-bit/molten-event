@@ -74,7 +74,7 @@ export default function StreamingDashboard() {
   return (
     <div className="space-y-10 animate-in mt-6">
       {/* Header & Controls */}
-      <div className="flex flex-col lg:flex-row items-center justify-between gap-8">
+      <div className="flex flex-col lg:flex-row items-center justify-between gap-8 bg-black/20 p-6 rounded-[30px] border border-white/5">
         <div className="text-center lg:text-left">
           <h2 className="section-title-neo">Live Streaming Analytics</h2>
           <p className="text-white/60 tracking-wider text-sm mt-3 font-sans max-w-xl">
@@ -82,7 +82,7 @@ export default function StreamingDashboard() {
           </p>
         </div>
         
-        <div className="flex items-center gap-6">
+        <div className="flex items-center justify-center lg:justify-end gap-6">
           {connected && (
             <div className="flex items-center gap-3">
               <span className="badge-neon-green">LIVE</span>
@@ -91,7 +91,7 @@ export default function StreamingDashboard() {
           {!connected ? (
             <button 
               onClick={connect} 
-              className="px-10 py-4 bg-neon-cyan text-black font-black text-xs rounded-full uppercase tracking-widest shadow-[0_0_25px_rgba(0,245,212,0.4)] hover:scale-105 transition-all"
+              className="px-10 py-4 bg-neon-cyan text-white font-black text-xs rounded-full uppercase tracking-widest shadow-[0_0_25px_rgba(0,245,212,0.4)] hover:scale-105 transition-all"
             >
               Start Stream
             </button>

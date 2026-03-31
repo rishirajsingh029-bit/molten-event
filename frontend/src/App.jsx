@@ -1,5 +1,6 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import Navbar from "./components/Navbar";
 import HeroLanding from "./components/HeroLanding";
 import QueryBuilder from "./components/QueryBuilder";
@@ -8,12 +9,31 @@ import StreamingDashboard from "./components/StreamingDashboard";
 import DocsPage from "./components/DocsPage";
 
 /**
- * App
- * ---
- * Entry point for the Dino Data platform.
- * Overhauled to maintain a minimalist cinematic aesthetic 
- * against the deep purple radial gradient background.
+ * AppContent
+ * ----------
+ * Separate component to use hooks like useNavigate/useLocation.
  */
+function AppContent() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    // Force redirect to landing page on refresh/initial load
+    if (location.pathname !== "/") {
+      navigate("/", { replace: true });
+    }
+  }, []); // Run once on mount
+
+  return (
+    <Routes>
+      <Route path="/" element={<HeroLanding />} />
+      <Route path="/analysis" element={<QueryBuilder />} />
+      <Route path="/benchmarks" element={<BenchmarkChart />} />
+      <Route path="/streaming" element={<StreamingDashboard />} />
+      <Route path="/docs" element={<DocsPage />} />
+    </Routes>
+  );
+}
 
 export default function App() {
   return (
@@ -24,13 +44,7 @@ export default function App() {
 
         {/* Main Content Area */}
         <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-10">
-          <Routes>
-            <Route path="/" element={<HeroLanding />} />
-            <Route path="/analysis" element={<QueryBuilder />} />
-            <Route path="/benchmarks" element={<BenchmarkChart />} />
-            <Route path="/streaming" element={<StreamingDashboard />} />
-            <Route path="/docs" element={<DocsPage />} />
-          </Routes>
+          <AppContent />
         </main>
 
         {/* Clean Minimalist Footer */}
